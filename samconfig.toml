@@ -8,9 +8,14 @@ s3_prefix = "crypto-stock-portfolio-backend"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "JWTSecret=\"your-secret-key-here\" CoinGeckoAPIKey=\"\""
+parameter_overrides = "JWTSecret=\"MebIEaH8IhGCV1T6n/k6k/gCzq3PBa19U32J1kqZirw=\" CoinGeckoAPIKey=\"\""
+resolve_s3 = true
+image_repositories = []
 
 [default.build]
 [default.build.parameters]
 cached = true
 parallel = true
+
+[default.global.parameters]
+region = "us-east-1"
