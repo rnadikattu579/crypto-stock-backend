@@ -1,0 +1,187 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Crypto & Stock Portfolio Tracker Backend
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.11
+    Environment:
+      Variables:
+        DYNAMODB_TABLE: !Ref PortfolioTable
+        JWT_SECRET: !Ref JWTSecret
+        COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
+    Architectures:
+      - x86_64
+
+Parameters:
+  JWTSecret:
+    Type: String
+    NoEcho: true
+    Description: Secret key for JWT token generation
+
+  CoinGeckoAPIKey:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: CoinGecko API Key (optional for free tier)
+
+Resources:
+  # DynamoDB Tables
+  PortfolioTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: portfolio-tracker
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  # API Gateway
+  PortfolioApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: JWTAuthorizer
+        Authorizers:
+          JWTAuthorizer:
+            FunctionArn: !GetAtt AuthorizerFunction.Arn
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+                - Authorization
+
+  # Lambda Functions
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.auth.handler
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /auth/login
+            Method: POST
+            Auth:
+              Authorizer: NONE
+        Register:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /auth/register
+            Method: POST
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  AuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.authorizer.handler
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JWTSecret
+
+  PortfolioFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.portfolio.handler
+      Events:
+        GetCrypto:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/crypto
+            Method: GET
+        GetStocks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/stocks
+            Method: GET
+        GetSummary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/summary
+            Method: GET
+        AddAsset:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets
+            Method: POST
+        UpdateAsset:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets/{asset_id}
+            Method: PUT
+        DeleteAsset:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets/{asset_id}
+            Method: DELETE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  PricesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.prices.handler
+      Events:
+        GetPrices:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /prices
+            Method: POST
+      Environment:
+        Variables:
+          COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${PortfolioApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+
+  DynamoDBTable:
+    Description: "DynamoDB table name"
+    Value: !Ref PortfolioTable
