@@ -52,6 +52,9 @@ jobs:
         run: sam build --use-container
 
       - name: SAM Deploy
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
         run: |
           sam deploy \
             --no-confirm-changeset \
@@ -60,7 +63,7 @@ jobs:
             --s3-prefix crypto-stock-portfolio-backend \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \
-            --parameter-overrides "JWTSecret=${{ secrets.JWT_SECRET }} CoinGeckoAPIKey=${{ secrets.COINGECKO_API_KEY }}
+            --parameter-overrides "JWTSecret=${JWT_SECRET} CoinGeckoAPIKey=${COINGECKO_API_KEY}"
 
       - name: Get API Endpoint
         id: get-endpoint
