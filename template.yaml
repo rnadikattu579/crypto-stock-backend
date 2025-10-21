@@ -143,36 +143,84 @@ Resources:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/crypto
             Method: GET
+        GetCryptoOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/crypto
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         GetStocks:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/stocks
             Method: GET
+        GetStocksOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/stocks
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         GetSummary:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/summary
             Method: GET
+        GetSummaryOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/summary
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         AddAsset:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/assets
             Method: POST
+        AddAssetOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         UpdateAsset:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/assets/{asset_id}
             Method: PUT
+        UpdateAssetOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets/{asset_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         DeleteAsset:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/assets/{asset_id}
             Method: DELETE
+        DeleteAssetOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/assets/{asset_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PortfolioTable
@@ -189,6 +237,14 @@ Resources:
             RestApiId: !Ref PortfolioApi
             Path: /prices
             Method: POST
+        GetPricesOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /prices
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
       Environment:
         Variables:
           COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
