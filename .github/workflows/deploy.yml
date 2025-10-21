@@ -60,7 +60,7 @@ jobs:
             --s3-prefix crypto-stock-portfolio-backend \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \
-            --parameter-overrides "JWTSecret=${{ secrets.JWT_SECRET }} CoinGeckoAPIKey=${{ secrets.COINGECKO_API_KEY }}"
+            --parameter-overrides "JWTSecret=${{ secrets.JWT_SECRET }} CoinGeckoAPIKey=${{ secrets.COINGECKO_API_KEY }}
 
       - name: Get API Endpoint
         id: get-endpoint
