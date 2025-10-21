@@ -10,8 +10,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         path = event.get('path', '')
         http_method = event.get('httpMethod', '')
-        body = json.loads(event.get('body', '{}'))
 
+        # Handle OPTIONS request for CORS preflight
+        if http_method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+                    'Access-Control-Max-Age': '600',
+                },
+                'body': ''
+            }
+
+        body = json.loads(event.get('body', '{}'))
         auth_service = AuthService()
 
         # POST /auth/register

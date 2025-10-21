@@ -94,12 +94,28 @@ Resources:
             Method: POST
             Auth:
               Authorizer: NONE
+        LoginOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /auth/login
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
         Register:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /auth/register
             Method: POST
+            Auth:
+              Authorizer: NONE
+        RegisterOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /auth/register
+            Method: OPTIONS
             Auth:
               Authorizer: NONE
       Policies:
