@@ -18,6 +18,10 @@ class AuthService:
 
     def _hash_password(self, password: str) -> str:
         """Hash a password"""
+        # Ensure password is properly encoded (bcrypt has 72 byte limit)
+        # Truncate if necessary to avoid bcrypt errors
+        if len(password.encode('utf-8')) > 72:
+            password = password[:72]
         return self.pwd_context.hash(password)
 
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
