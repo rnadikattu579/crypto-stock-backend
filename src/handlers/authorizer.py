@@ -32,6 +32,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not user_id or not email:
             raise ValueError("Invalid token payload")
 
+        # Return allow policy with wildcard resource for better caching
+        # Extract API Gateway ARN base (without specific method/path)
+        method_arn = event['methodArn']
+        # Format: arn:aws:execute-api:region:account-id:api-id/stage/method/path
+        # We want: arn:aws:execute-api:region:account-id:api-id/stage/*/*
+        arn_parts = method_arn.split('/')
+        api_gateway_arn = '/'.join(arn_parts[:2]) + '/*/*'
+
+        print(f"Allowing access for user {user_id} to {api_gateway_arn}")
+
         # Return allow policy
         return {
             'principalId': user_id,
@@ -41,7 +51,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     {
                         'Action': 'execute-api:Invoke',
                         'Effect': 'Allow',
-                        'Resource': event['methodArn']
+                        'Resource': api_gateway_arn
                     }
                 ]
             },
