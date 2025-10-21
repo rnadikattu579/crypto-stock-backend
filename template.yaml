@@ -199,21 +199,13 @@ Resources:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/assets/{asset_id}
             Method: PUT
-        UpdateAssetOptions:
-          Type: Api
-          Properties:
-            RestApiId: !Ref PortfolioApi
-            Path: /portfolio/assets/{asset_id}
-            Method: OPTIONS
-            Auth:
-              Authorizer: NONE
         DeleteAsset:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
             Path: /portfolio/assets/{asset_id}
             Method: DELETE
-        DeleteAssetOptions:
+        AssetIdOptions:
           Type: Api
           Properties:
             RestApiId: !Ref PortfolioApi
