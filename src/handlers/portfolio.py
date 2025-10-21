@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Any
-from ..models.portfolio import AssetCreate, AssetUpdate, AssetType
-from ..models.response import SuccessResponse, ErrorResponse
-from ..services.portfolio_service import PortfolioService
+from models.portfolio import AssetCreate, AssetUpdate, AssetType
+from models.response import SuccessResponse, ErrorResponse
+from services.portfolio_service import PortfolioService
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:

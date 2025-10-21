@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Any
-from ..models.user import UserCreate, UserLogin
-from ..models.response import SuccessResponse, ErrorResponse
-from ..services.auth_service import AuthService
+from models.user import UserCreate, UserLogin
+from models.response import SuccessResponse, ErrorResponse
+from services.auth_service import AuthService
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:

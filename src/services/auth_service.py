@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from ..models.user import User, UserCreate, UserLogin, Token, TokenData
-from .dynamodb_service import DynamoDBService
+from models.user import User, UserCreate, UserLogin, Token, TokenData
+from services.dynamodb_service import DynamoDBService
 
 
 class AuthService:

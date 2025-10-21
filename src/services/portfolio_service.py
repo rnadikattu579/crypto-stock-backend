@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from ..models.portfolio import Asset, AssetCreate, AssetUpdate, Portfolio, PortfolioSummary, AssetType
-from .dynamodb_service import DynamoDBService
-from .price_service import PriceService
+from models.portfolio import Asset, AssetCreate, AssetUpdate, Portfolio, PortfolioSummary, AssetType
+from services.dynamodb_service import DynamoDBService
+from services.price_service import PriceService
 
 
 class PortfolioService:

@@ -1,9 +1,9 @@
 import json
 from typing import Dict, Any
 from datetime import datetime
-from ..models.portfolio import PriceRequest
-from ..models.response import SuccessResponse, ErrorResponse
-from ..services.price_service import PriceService
+from models.portfolio import PriceRequest
+from models.response import SuccessResponse, ErrorResponse
+from services.price_service import PriceService
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
