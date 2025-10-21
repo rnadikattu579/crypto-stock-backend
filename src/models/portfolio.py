@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime
+from typing import Optional, List, Union
+from datetime import datetime, date
 from enum import Enum
 
 
@@ -31,13 +31,13 @@ class AssetCreate(BaseModel):
     symbol: str
     quantity: float = Field(..., gt=0)
     purchase_price: float = Field(..., gt=0)
-    purchase_date: datetime
+    purchase_date: Union[date, datetime, str]
 
 
 class AssetUpdate(BaseModel):
     quantity: Optional[float] = Field(None, gt=0)
     purchase_price: Optional[float] = Field(None, gt=0)
-    purchase_date: Optional[datetime] = None
+    purchase_date: Optional[Union[date, datetime, str]] = None
 
 
 class Portfolio(BaseModel):

@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, date
+from typing import List, Optional, Union
 from models.portfolio import Asset, AssetCreate, AssetUpdate, Portfolio, PortfolioSummary, AssetType
 from services.dynamodb_service import DynamoDBService
 from services.price_service import PriceService
@@ -10,6 +10,27 @@ class PortfolioService:
     def __init__(self):
         self.db = DynamoDBService()
         self.price_service = PriceService()
+
+    def _normalize_date(self, date_input: Union[date, datetime, str]) -> datetime:
+        """Convert date/datetime/string to datetime object"""
+        if isinstance(date_input, datetime):
+            return date_input
+        elif isinstance(date_input, date):
+            return datetime.combine(date_input, datetime.min.time())
+        elif isinstance(date_input, str):
+            # Try to parse date string
+            try:
+                # Try datetime format first
+                return datetime.fromisoformat(date_input)
+            except:
+                # Try date format (YYYY-MM-DD)
+                try:
+                    parsed_date = datetime.strptime(date_input, '%Y-%m-%d')
+                    return parsed_date
+                except:
+                    # Fallback to current datetime
+                    return datetime.utcnow()
+        return datetime.utcnow()
 
     def _enrich_asset_with_prices(self, asset: Asset) -> Asset:
         """Calculate current value and gain/loss for an asset"""
@@ -41,6 +62,9 @@ class PortfolioService:
         asset_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
+        # Normalize purchase_date to datetime
+        purchase_datetime = self._normalize_date(asset_create.purchase_date)
+
         asset_data = {
             'PK': f'USER#{user_id}',
             'SK': f'ASSET#{asset_id}',
@@ -52,7 +76,7 @@ class PortfolioService:
             'symbol': asset_create.symbol.upper(),
             'quantity': asset_create.quantity,
             'purchase_price': asset_create.purchase_price,
-            'purchase_date': asset_create.purchase_date.isoformat(),
+            'purchase_date': purchase_datetime.isoformat(),
             'created_at': now.isoformat(),
             'updated_at': now.isoformat(),
         }
@@ -66,7 +90,7 @@ class PortfolioService:
             symbol=asset_create.symbol.upper(),
             quantity=asset_create.quantity,
             purchase_price=asset_create.purchase_price,
-            purchase_date=asset_create.purchase_date,
+            purchase_date=purchase_datetime,
             created_at=now,
             updated_at=now,
         )
@@ -128,7 +152,8 @@ class PortfolioService:
         if asset_update.purchase_price is not None:
             updates['purchase_price'] = asset_update.purchase_price
         if asset_update.purchase_date is not None:
-            updates['purchase_date'] = asset_update.purchase_date.isoformat()
+            purchase_datetime = self._normalize_date(asset_update.purchase_date)
+            updates['purchase_date'] = purchase_datetime.isoformat()
 
         updated_item = self.db.update_item(f'USER#{user_id}', f'ASSET#{asset_id}', updates)
 
