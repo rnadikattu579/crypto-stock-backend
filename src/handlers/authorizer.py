@@ -6,10 +6,18 @@ from jose import jwt, JWTError
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Lambda authorizer for JWT validation"""
     try:
-        # Extract token from Authorization header
-        token = event.get('headers', {}).get('Authorization', '')
+        # Extract token from Authorization header (case-insensitive)
+        headers = event.get('headers', {})
 
-        if token.startswith('Bearer '):
+        # Try different header casings
+        token = (headers.get('Authorization') or
+                headers.get('authorization') or
+                headers.get('AUTHORIZATION') or '')
+
+        print(f"Token received: {token[:20]}..." if token else "No token found")
+        print(f"Available headers: {list(headers.keys())}")
+
+        if token.startswith('Bearer ') or token.startswith('bearer '):
             token = token[7:]
         elif not token:
             raise ValueError("No authorization token provided")
