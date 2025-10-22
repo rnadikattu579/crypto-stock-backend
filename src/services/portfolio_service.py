@@ -58,42 +58,87 @@ class PortfolioService:
         return asset
 
     def add_asset(self, user_id: str, asset_create: AssetCreate) -> Asset:
-        """Add a new asset to user's portfolio"""
-        asset_id = str(uuid.uuid4())
+        """Add a new asset to user's portfolio or average with existing asset"""
         now = datetime.utcnow()
-
-        # Normalize purchase_date to datetime
         purchase_datetime = self._normalize_date(asset_create.purchase_date)
+        symbol_upper = asset_create.symbol.upper()
 
-        asset_data = {
-            'PK': f'USER#{user_id}',
-            'SK': f'ASSET#{asset_id}',
-            'GSI1PK': f'ASSET#{asset_id}',
-            'GSI1SK': f'USER#{user_id}',
-            'asset_id': asset_id,
-            'user_id': user_id,
-            'asset_type': asset_create.asset_type.value,
-            'symbol': asset_create.symbol.upper(),
-            'quantity': asset_create.quantity,
-            'purchase_price': asset_create.purchase_price,
-            'purchase_date': purchase_datetime.isoformat(),
-            'created_at': now.isoformat(),
-            'updated_at': now.isoformat(),
-        }
+        # Check if user already has this asset
+        existing_assets = self.get_user_assets(user_id, asset_create.asset_type)
+        existing_asset = next((a for a in existing_assets if a.symbol == symbol_upper), None)
 
-        self.db.put_item(asset_data)
+        if existing_asset:
+            # Asset exists - calculate average purchase price
+            existing_total_cost = existing_asset.purchase_price * existing_asset.quantity
+            new_total_cost = asset_create.purchase_price * asset_create.quantity
 
-        asset = Asset(
-            asset_id=asset_id,
-            user_id=user_id,
-            asset_type=asset_create.asset_type,
-            symbol=asset_create.symbol.upper(),
-            quantity=asset_create.quantity,
-            purchase_price=asset_create.purchase_price,
-            purchase_date=purchase_datetime,
-            created_at=now,
-            updated_at=now,
-        )
+            new_quantity = existing_asset.quantity + asset_create.quantity
+            new_avg_price = (existing_total_cost + new_total_cost) / new_quantity
+
+            # Keep the earliest purchase date
+            if purchase_datetime < existing_asset.purchase_date:
+                earliest_date = purchase_datetime
+            else:
+                earliest_date = existing_asset.purchase_date
+
+            # Update the existing asset
+            updates = {
+                'quantity': new_quantity,
+                'purchase_price': new_avg_price,
+                'purchase_date': earliest_date.isoformat(),
+                'updated_at': now.isoformat(),
+            }
+
+            updated_item = self.db.update_item(
+                f'USER#{user_id}',
+                f'ASSET#{existing_asset.asset_id}',
+                updates
+            )
+
+            asset = Asset(
+                asset_id=updated_item['asset_id'],
+                user_id=updated_item['user_id'],
+                asset_type=AssetType(updated_item['asset_type']),
+                symbol=updated_item['symbol'],
+                quantity=updated_item['quantity'],
+                purchase_price=updated_item['purchase_price'],
+                purchase_date=datetime.fromisoformat(updated_item['purchase_date']),
+                created_at=datetime.fromisoformat(updated_item['created_at']),
+                updated_at=datetime.fromisoformat(updated_item['updated_at']),
+            )
+        else:
+            # New asset - create it
+            asset_id = str(uuid.uuid4())
+
+            asset_data = {
+                'PK': f'USER#{user_id}',
+                'SK': f'ASSET#{asset_id}',
+                'GSI1PK': f'ASSET#{asset_id}',
+                'GSI1SK': f'USER#{user_id}',
+                'asset_id': asset_id,
+                'user_id': user_id,
+                'asset_type': asset_create.asset_type.value,
+                'symbol': symbol_upper,
+                'quantity': asset_create.quantity,
+                'purchase_price': asset_create.purchase_price,
+                'purchase_date': purchase_datetime.isoformat(),
+                'created_at': now.isoformat(),
+                'updated_at': now.isoformat(),
+            }
+
+            self.db.put_item(asset_data)
+
+            asset = Asset(
+                asset_id=asset_id,
+                user_id=user_id,
+                asset_type=asset_create.asset_type,
+                symbol=symbol_upper,
+                quantity=asset_create.quantity,
+                purchase_price=asset_create.purchase_price,
+                purchase_date=purchase_datetime,
+                created_at=now,
+                updated_at=now,
+            )
 
         return self._enrich_asset_with_prices(asset)
 
