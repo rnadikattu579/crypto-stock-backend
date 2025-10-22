@@ -1,7 +1,8 @@
 import uuid
+import json
 from datetime import datetime, date
 from typing import List, Optional, Union
-from models.portfolio import Asset, AssetCreate, AssetUpdate, Portfolio, PortfolioSummary, AssetType
+from models.portfolio import Asset, AssetCreate, AssetUpdate, Portfolio, PortfolioSummary, AssetType, PurchaseEntry
 from services.dynamodb_service import DynamoDBService
 from services.price_service import PriceService
 
@@ -67,8 +68,18 @@ class PortfolioService:
         existing_assets = self.get_user_assets(user_id, asset_create.asset_type)
         existing_asset = next((a for a in existing_assets if a.symbol == symbol_upper), None)
 
+        # Create new purchase entry
+        new_purchase_id = str(uuid.uuid4())
+        new_purchase_entry = {
+            'purchase_id': new_purchase_id,
+            'quantity': asset_create.quantity,
+            'purchase_price': asset_create.purchase_price,
+            'purchase_date': purchase_datetime.isoformat(),
+            'total_cost': asset_create.purchase_price * asset_create.quantity,
+        }
+
         if existing_asset:
-            # Asset exists - calculate average purchase price
+            # Asset exists - calculate average purchase price and append to history
             existing_total_cost = existing_asset.purchase_price * existing_asset.quantity
             new_total_cost = asset_create.purchase_price * asset_create.quantity
 
@@ -81,11 +92,25 @@ class PortfolioService:
             else:
                 earliest_date = existing_asset.purchase_date
 
+            # Get existing purchase history and append new entry
+            existing_history = existing_asset.purchase_history or []
+            purchase_history_data = [
+                {
+                    'purchase_id': entry.purchase_id,
+                    'quantity': entry.quantity,
+                    'purchase_price': entry.purchase_price,
+                    'purchase_date': entry.purchase_date.isoformat(),
+                    'total_cost': entry.total_cost,
+                } for entry in existing_history
+            ]
+            purchase_history_data.append(new_purchase_entry)
+
             # Update the existing asset
             updates = {
                 'quantity': new_quantity,
                 'purchase_price': new_avg_price,
                 'purchase_date': earliest_date.isoformat(),
+                'purchase_history': json.dumps(purchase_history_data),
                 'updated_at': now.isoformat(),
             }
 
@@ -95,6 +120,20 @@ class PortfolioService:
                 updates
             )
 
+            # Parse purchase history
+            purchase_history = []
+            if 'purchase_history' in updated_item:
+                history_data = json.loads(updated_item['purchase_history']) if isinstance(updated_item['purchase_history'], str) else updated_item['purchase_history']
+                purchase_history = [
+                    PurchaseEntry(
+                        purchase_id=entry['purchase_id'],
+                        quantity=entry['quantity'],
+                        purchase_price=entry['purchase_price'],
+                        purchase_date=datetime.fromisoformat(entry['purchase_date']),
+                        total_cost=entry['total_cost'],
+                    ) for entry in history_data
+                ]
+
             asset = Asset(
                 asset_id=updated_item['asset_id'],
                 user_id=updated_item['user_id'],
@@ -103,12 +142,14 @@ class PortfolioService:
                 quantity=updated_item['quantity'],
                 purchase_price=updated_item['purchase_price'],
                 purchase_date=datetime.fromisoformat(updated_item['purchase_date']),
+                purchase_history=purchase_history,
                 created_at=datetime.fromisoformat(updated_item['created_at']),
                 updated_at=datetime.fromisoformat(updated_item['updated_at']),
             )
         else:
-            # New asset - create it
+            # New asset - create it with initial purchase history
             asset_id = str(uuid.uuid4())
+            purchase_history_data = [new_purchase_entry]
 
             asset_data = {
                 'PK': f'USER#{user_id}',
@@ -122,11 +163,22 @@ class PortfolioService:
                 'quantity': asset_create.quantity,
                 'purchase_price': asset_create.purchase_price,
                 'purchase_date': purchase_datetime.isoformat(),
+                'purchase_history': json.dumps(purchase_history_data),
                 'created_at': now.isoformat(),
                 'updated_at': now.isoformat(),
             }
 
             self.db.put_item(asset_data)
+
+            purchase_history = [
+                PurchaseEntry(
+                    purchase_id=new_purchase_id,
+                    quantity=asset_create.quantity,
+                    purchase_price=asset_create.purchase_price,
+                    purchase_date=purchase_datetime,
+                    total_cost=asset_create.purchase_price * asset_create.quantity,
+                )
+            ]
 
             asset = Asset(
                 asset_id=asset_id,
@@ -136,6 +188,7 @@ class PortfolioService:
                 quantity=asset_create.quantity,
                 purchase_price=asset_create.purchase_price,
                 purchase_date=purchase_datetime,
+                purchase_history=purchase_history,
                 created_at=now,
                 updated_at=now,
             )
@@ -151,6 +204,53 @@ class PortfolioService:
             if asset_type and item['asset_type'] != asset_type.value:
                 continue
 
+            # Parse purchase history if it exists, or create one from current data
+            purchase_history = []
+            if 'purchase_history' in item and item['purchase_history']:
+                history_data = json.loads(item['purchase_history']) if isinstance(item['purchase_history'], str) else item['purchase_history']
+                purchase_history = [
+                    PurchaseEntry(
+                        purchase_id=entry['purchase_id'],
+                        quantity=entry['quantity'],
+                        purchase_price=entry['purchase_price'],
+                        purchase_date=datetime.fromisoformat(entry['purchase_date']),
+                        total_cost=entry['total_cost'],
+                    ) for entry in history_data
+                ]
+            else:
+                # Migrate existing asset: create initial purchase history from current data
+                initial_purchase_id = str(uuid.uuid4())
+                purchase_date = datetime.fromisoformat(item['purchase_date'])
+                total_cost = item['quantity'] * item['purchase_price']
+
+                purchase_history = [
+                    PurchaseEntry(
+                        purchase_id=initial_purchase_id,
+                        quantity=item['quantity'],
+                        purchase_price=item['purchase_price'],
+                        purchase_date=purchase_date,
+                        total_cost=total_cost,
+                    )
+                ]
+
+                # Save the purchase history back to DynamoDB for this asset
+                purchase_history_data = [{
+                    'purchase_id': initial_purchase_id,
+                    'quantity': item['quantity'],
+                    'purchase_price': item['purchase_price'],
+                    'purchase_date': purchase_date.isoformat(),
+                    'total_cost': total_cost,
+                }]
+
+                try:
+                    self.db.update_item(
+                        f'USER#{user_id}',
+                        f'ASSET#{item["asset_id"]}',
+                        {'purchase_history': json.dumps(purchase_history_data)}
+                    )
+                except Exception as e:
+                    print(f"Warning: Could not migrate purchase history for asset {item['asset_id']}: {str(e)}")
+
             asset = Asset(
                 asset_id=item['asset_id'],
                 user_id=item['user_id'],
@@ -159,6 +259,7 @@ class PortfolioService:
                 quantity=item['quantity'],
                 purchase_price=item['purchase_price'],
                 purchase_date=datetime.fromisoformat(item['purchase_date']),
+                purchase_history=purchase_history,
                 created_at=datetime.fromisoformat(item['created_at']),
                 updated_at=datetime.fromisoformat(item['updated_at']),
             )
@@ -174,6 +275,53 @@ class PortfolioService:
         if not item:
             return None
 
+        # Parse purchase history if it exists, or create one from current data
+        purchase_history = []
+        if 'purchase_history' in item and item['purchase_history']:
+            history_data = json.loads(item['purchase_history']) if isinstance(item['purchase_history'], str) else item['purchase_history']
+            purchase_history = [
+                PurchaseEntry(
+                    purchase_id=entry['purchase_id'],
+                    quantity=entry['quantity'],
+                    purchase_price=entry['purchase_price'],
+                    purchase_date=datetime.fromisoformat(entry['purchase_date']),
+                    total_cost=entry['total_cost'],
+                ) for entry in history_data
+            ]
+        else:
+            # Migrate existing asset: create initial purchase history from current data
+            initial_purchase_id = str(uuid.uuid4())
+            purchase_date = datetime.fromisoformat(item['purchase_date'])
+            total_cost = item['quantity'] * item['purchase_price']
+
+            purchase_history = [
+                PurchaseEntry(
+                    purchase_id=initial_purchase_id,
+                    quantity=item['quantity'],
+                    purchase_price=item['purchase_price'],
+                    purchase_date=purchase_date,
+                    total_cost=total_cost,
+                )
+            ]
+
+            # Save the purchase history back to DynamoDB for this asset
+            purchase_history_data = [{
+                'purchase_id': initial_purchase_id,
+                'quantity': item['quantity'],
+                'purchase_price': item['purchase_price'],
+                'purchase_date': purchase_date.isoformat(),
+                'total_cost': total_cost,
+            }]
+
+            try:
+                self.db.update_item(
+                    f'USER#{user_id}',
+                    f'ASSET#{asset_id}',
+                    {'purchase_history': json.dumps(purchase_history_data)}
+                )
+            except Exception as e:
+                print(f"Warning: Could not migrate purchase history for asset {asset_id}: {str(e)}")
+
         asset = Asset(
             asset_id=item['asset_id'],
             user_id=item['user_id'],
@@ -182,6 +330,7 @@ class PortfolioService:
             quantity=item['quantity'],
             purchase_price=item['purchase_price'],
             purchase_date=datetime.fromisoformat(item['purchase_date']),
+            purchase_history=purchase_history,
             created_at=datetime.fromisoformat(item['created_at']),
             updated_at=datetime.fromisoformat(item['updated_at']),
         )

@@ -9,6 +9,15 @@ class AssetType(str, Enum):
     STOCK = "stock"
 
 
+class PurchaseEntry(BaseModel):
+    """Individual purchase entry within an asset"""
+    purchase_id: str
+    quantity: float
+    purchase_price: float
+    purchase_date: datetime
+    total_cost: float
+
+
 class Asset(BaseModel):
     asset_id: Optional[str] = None
     user_id: str
@@ -16,8 +25,9 @@ class Asset(BaseModel):
     symbol: str = Field(..., description="Stock ticker or crypto symbol")
     name: Optional[str] = None
     quantity: float = Field(..., gt=0)
-    purchase_price: float = Field(..., gt=0)
-    purchase_date: datetime
+    purchase_price: float = Field(..., gt=0)  # Average purchase price
+    purchase_date: datetime  # Earliest purchase date
+    purchase_history: Optional[List['PurchaseEntry']] = []  # Individual purchase entries
     current_price: Optional[float] = None
     current_value: Optional[float] = None
     gain_loss: Optional[float] = None
