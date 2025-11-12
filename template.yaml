@@ -254,6 +254,74 @@ Resources:
         Variables:
           COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
 
+  PortfolioHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.portfolio_history.handler
+      Events:
+        GetHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history
+            Method: GET
+        GetHistoryOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        CreateSnapshot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history/snapshot
+            Method: POST
+        CreateSnapshotOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history/snapshot
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        ListSnapshots:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history/snapshots
+            Method: GET
+        ListSnapshotsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /portfolio/history/snapshots
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  DailySnapshotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.portfolio_history.daily_snapshot_job
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 0 * * ? *)
+            Description: Create daily portfolio snapshots at midnight UTC
+            Enabled: true
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
