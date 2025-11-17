@@ -322,6 +322,90 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref PortfolioTable
 
+  TransactionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.transaction.handler
+      Events:
+        ListTransactions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions
+            Method: GET
+        CreateTransaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions
+            Method: POST
+        TransactionsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetTransactionHistory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/history
+            Method: GET
+        GetTransactionHistoryOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/history
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetCostBasis:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/cost-basis
+            Method: GET
+        GetCostBasisOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/cost-basis
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetTransaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/{transaction_id}
+            Method: GET
+        UpdateTransaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/{transaction_id}
+            Method: PUT
+        DeleteTransaction:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/{transaction_id}
+            Method: DELETE
+        TransactionIdOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /transactions/{transaction_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
 Outputs:
   ApiEndpoint:
     Description: "API Gateway endpoint URL"
