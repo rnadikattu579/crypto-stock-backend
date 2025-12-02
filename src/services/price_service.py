@@ -201,3 +201,6 @@ class PriceService:
             return self.get_stock_prices(symbols)
         else:
             raise ValueError(f"Invalid asset type: {asset_type}")
+
+# Create a singleton instance for import
+price_service = PriceService()

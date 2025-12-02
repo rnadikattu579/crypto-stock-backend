@@ -413,3 +413,7 @@ class PortfolioService:
             total_gain_loss=total_gain_loss,
             total_gain_loss_percentage=total_gain_loss_percentage,
         )
+
+
+# Create singleton instance
+portfolio_service = PortfolioService()

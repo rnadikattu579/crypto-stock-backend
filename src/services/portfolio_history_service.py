@@ -463,3 +463,7 @@ class PortfolioHistoryService:
         except Exception as e:
             logger.error(f"Error creating daily snapshots: {str(e)}")
             raise
+
+
+# Create singleton instance
+portfolio_history_service = PortfolioHistoryService()

@@ -84,6 +84,7 @@ Resources:
               Access-Control-Allow-Methods: "'*'"
       Auth:
         DefaultAuthorizer: JWTAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
         Authorizers:
           JWTAuthorizer:
             FunctionArn: !GetAtt AuthorizerFunction.Arn
@@ -402,6 +403,506 @@ Resources:
             Method: OPTIONS
             Auth:
               Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  AdvancedAnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.analytics.handler
+      Events:
+        GetMetrics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/metrics
+            Method: GET
+        GetMetricsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/metrics
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetBenchmarks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/benchmarks
+            Method: GET
+        GetBenchmarksOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/benchmarks
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetRisk:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/risk
+            Method: GET
+        GetRiskOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /analytics/risk
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  RebalanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.rebalance.handler
+      Events:
+        GetTargets:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/targets
+            Method: GET
+        SetTarget:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/targets
+            Method: POST
+        TargetsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/targets
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        DeleteTarget:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/targets/{allocation_id}
+            Method: DELETE
+        DeleteTargetOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/targets/{allocation_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        Calculate:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/calculate
+            Method: GET
+        CalculateOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/calculate
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetDrift:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/drift
+            Method: GET
+        GetDriftOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /rebalance/drift
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  TaxFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.tax.handler
+      Events:
+        GetTaxSummary:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/summary
+            Method: GET
+        GetTaxSummaryOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/summary
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetForm8949:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/form-8949
+            Method: GET
+        GetForm8949Options:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/form-8949
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetUnrealized:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/unrealized
+            Method: GET
+        GetUnrealizedOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/unrealized
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetHarvesting:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/harvesting
+            Method: GET
+        GetHarvestingOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /tax/harvesting
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  ScenariosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.scenarios.handler
+      Events:
+        GetProjection:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/projection
+            Method: GET
+        GetProjectionOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/projection
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetMonteCarlo:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/monte-carlo
+            Method: GET
+        GetMonteCarloOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/monte-carlo
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetRetirement:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/retirement
+            Method: GET
+        GetRetirementOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/retirement
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetGoals:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/goals
+            Method: GET
+        CreateGoal:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/goals
+            Method: POST
+        GoalsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/goals
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        DeleteGoal:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/goals/{goal_id}
+            Method: DELETE
+        DeleteGoalOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /scenarios/goals/{goal_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  SearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.search.handler
+      Events:
+        GlobalSearch:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/global
+            Method: GET
+        GlobalSearchOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/global
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetFilters:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/filters
+            Method: GET
+        SaveFilter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/filters
+            Method: POST
+        FiltersOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/filters
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        DeleteFilter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/filters/{filter_id}
+            Method: DELETE
+        DeleteFilterOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/filters/{filter_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetTags:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags
+            Method: GET
+        AddTag:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags
+            Method: POST
+        RemoveTag:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags
+            Method: DELETE
+        TagsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetAssetsByTag:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags/assets
+            Method: GET
+        GetAssetsByTagOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/tags/assets
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        QuickFilter:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/quick
+            Method: GET
+        QuickFilterOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /search/quick
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  # Alerts Function
+  AlertsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.alerts.handler
+      Runtime: python3.11
+      Timeout: 30
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PortfolioTable
+          COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
+      Events:
+        ListAlerts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts
+            Method: GET
+            Auth:
+              Authorizer: JWTAuthorizer
+        CreateAlert:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts
+            Method: POST
+            Auth:
+              Authorizer: JWTAuthorizer
+        GetAlert:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/{alert_id}
+            Method: GET
+            Auth:
+              Authorizer: JWTAuthorizer
+        UpdateAlert:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/{alert_id}
+            Method: PUT
+            Auth:
+              Authorizer: JWTAuthorizer
+        DeleteAlert:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/{alert_id}
+            Method: DELETE
+            Auth:
+              Authorizer: JWTAuthorizer
+        GetAlertStats:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/stats
+            Method: GET
+            Auth:
+              Authorizer: JWTAuthorizer
+        AlertsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        AlertIdOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/{alert_id}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        AlertStatsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortfolioApi
+            Path: /alerts/stats
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PortfolioTable
+
+  # Alert Checker Function - Runs periodically to check all alerts
+  AlertCheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handlers.alert_checker.handler
+      Runtime: python3.11
+      Timeout: 300
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PortfolioTable
+          COINGECKO_API_KEY: !Ref CoinGeckoAPIKey
+      Events:
+        AlertSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            Description: Check all active alerts every 15 minutes
+            Enabled: true
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PortfolioTable
